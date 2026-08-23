@@ -50,7 +50,10 @@ def export_policy(checkpoints_dir: str = "data/checkpoints", output_file: str = 
     # 3. Load weights into the standalone model architecture
     state_dict = torch.load(policy_src, map_location="cpu")
     policy = StandaloneInferencePolicy()
-    policy.load_state_dict(state_dict)
+    if any(k.startswith("model.") for k in state_dict.keys()):
+        policy.load_state_dict(state_dict)
+    else:
+        policy.model.load_state_dict(state_dict)
     policy.eval()
 
     # 4. Trace and export as standalone TorchScript

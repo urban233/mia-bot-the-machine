@@ -23,6 +23,7 @@ py_library(
         "@pip//markupsafe",
         "@pip//mpmath",
         "@pip//networkx",
+        "@pip//numpy",
         "@pip//sympy",
         "@pip//torch",
         "@pip//typing_extensions",
