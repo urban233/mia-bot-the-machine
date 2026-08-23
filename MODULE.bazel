@@ -21,6 +21,10 @@ rules_python_config.explicit_init_py(default = True)
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 pip.parse(
+    extra_pip_args = [
+        "--extra-index-url",
+        "https://download.pytorch.org/whl/cpu",
+    ],
     hub_name = "pip",
     python_version = "3.11",
     requirements_lock = "//:requirements_lock.txt",
