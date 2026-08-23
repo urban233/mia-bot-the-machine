@@ -1,4 +1,8 @@
-# MIA-BOT: The Machine
+<p align="center">
+  <img src="assets/logo.svg" width="256" height="256" alt="MIA-BOT mark">
+</p>
+
+<h1 align="center">MIA-BOT: The Machine</h1>
 
 A standalone, reinforcement learning-driven Rocket League agent trained with `rlgym-sim` and `rlgym-ppo`, optimized for CPU inference and deployment via RLBot.
 
