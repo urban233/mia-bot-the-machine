@@ -12,6 +12,38 @@ exports_files([
 ])
 
 # ------------------------------------------------------------------------------
+# PyTorch Dependency Group (Core, JIT, CUDA & Math dependencies)
+# ------------------------------------------------------------------------------
+py_library(
+    name = "torch_deps",
+    deps = [
+        "@pip//filelock",
+        "@pip//fsspec",
+        "@pip//jinja2",
+        "@pip//markupsafe",
+        "@pip//mpmath",
+        "@pip//networkx",
+        "@pip//nvidia_cublas_cu12",
+        "@pip//nvidia_cuda_cupti_cu12",
+        "@pip//nvidia_cuda_nvrtc_cu12",
+        "@pip//nvidia_cuda_runtime_cu12",
+        "@pip//nvidia_cudnn_cu12",
+        "@pip//nvidia_cufft_cu12",
+        "@pip//nvidia_curand_cu12",
+        "@pip//nvidia_cusolver_cu12",
+        "@pip//nvidia_cusparse_cu12",
+        "@pip//nvidia_cusparselt_cu12",
+        "@pip//nvidia_nccl_cu12",
+        "@pip//nvidia_nvjitlink_cu12",
+        "@pip//nvidia_nvtx_cu12",
+        "@pip//sympy",
+        "@pip//torch",
+        "@pip//triton",
+        "@pip//typing_extensions",
+    ],
+)
+
+# ------------------------------------------------------------------------------
 # Core Package Libraries and Binaries
 # ------------------------------------------------------------------------------
 py_library(
@@ -22,14 +54,9 @@ py_library(
     ],
     imports = [".."],
     deps = [
-        "@pip//filelock",
-        "@pip//jinja2",
-        "@pip//networkx",
+        ":torch_deps",
         "@pip//numpy",
         "@pip//rlbot",
-        "@pip//sympy",
-        "@pip//torch",
-        "@pip//typing_extensions",
         "@rules_python//python/runfiles",
     ],
 )
@@ -57,16 +84,11 @@ py_binary(
     imports = [".."],
     main = "train.py",
     deps = [
-        "@pip//filelock",
-        "@pip//jinja2",
-        "@pip//networkx",
+        ":torch_deps",
         "@pip//numpy",
         "@pip//rlgym_ppo",
         "@pip//rlgym_sim",
         "@pip//rocketsim",
-        "@pip//sympy",
-        "@pip//torch",
-        "@pip//typing_extensions",
     ],
 )
 
@@ -76,12 +98,7 @@ py_binary(
     imports = [".."],
     main = "export.py",
     deps = [
-        "@pip//filelock",
-        "@pip//jinja2",
-        "@pip//networkx",
-        "@pip//sympy",
-        "@pip//torch",
-        "@pip//typing_extensions",
+        ":torch_deps",
     ],
 )
 
