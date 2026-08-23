@@ -22,9 +22,14 @@ py_library(
     ],
     imports = [".."],
     deps = [
+        "@pip//filelock",
+        "@pip//jinja2",
+        "@pip//networkx",
         "@pip//numpy",
         "@pip//rlbot",
+        "@pip//sympy",
         "@pip//torch",
+        "@pip//typing_extensions",
         "@rules_python//python/runfiles",
     ],
 )
@@ -52,11 +57,16 @@ py_binary(
     imports = [".."],
     main = "train.py",
     deps = [
+        "@pip//filelock",
+        "@pip//jinja2",
+        "@pip//networkx",
         "@pip//numpy",
         "@pip//rlgym_ppo",
         "@pip//rlgym_sim",
         "@pip//rocketsim",
+        "@pip//sympy",
         "@pip//torch",
+        "@pip//typing_extensions",
     ],
 )
 
@@ -66,7 +76,12 @@ py_binary(
     imports = [".."],
     main = "export.py",
     deps = [
+        "@pip//filelock",
+        "@pip//jinja2",
+        "@pip//networkx",
+        "@pip//sympy",
         "@pip//torch",
+        "@pip//typing_extensions",
     ],
 )
 
@@ -80,4 +95,3 @@ py_binary(
     imports = [".."],
     main = "bundle.py",
 )
-

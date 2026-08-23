@@ -8,8 +8,14 @@ py_test(
     imports = ["../src"],
     deps = [
         "//src/mia_bot:bot_lib",
+        "@pip//filelock",
+        "@pip//jinja2",
+        "@pip//networkx",
         "@pip//numpy",
         "@pip//pytest",
+        "@pip//sympy",
+        "@pip//torch",
+        "@pip//typing_extensions",
     ],
 )
 
@@ -19,8 +25,14 @@ py_test(
     imports = ["../src"],
     deps = [
         "//src/mia_bot:bot_lib",
+        "@pip//filelock",
+        "@pip//jinja2",
+        "@pip//networkx",
         "@pip//numpy",
         "@pip//pytest",
+        "@pip//sympy",
+        "@pip//torch",
+        "@pip//typing_extensions",
     ],
 )
 
@@ -40,8 +52,13 @@ py_test(
     imports = ["../src"],
     deps = [
         "//src/mia_bot:export",
+        "@pip//filelock",
+        "@pip//jinja2",
+        "@pip//networkx",
         "@pip//pytest",
+        "@pip//sympy",
         "@pip//torch",
+        "@pip//typing_extensions",
     ],
 )
 
@@ -74,9 +91,14 @@ py_test(
     deps = [
         "//src/mia_bot:bot_lib",
         "//src/mia_bot:export",
+        "@pip//filelock",
+        "@pip//jinja2",
+        "@pip//networkx",
         "@pip//numpy",
         "@pip//pytest",
+        "@pip//sympy",
         "@pip//torch",
+        "@pip//typing_extensions",
     ],
 )
 
