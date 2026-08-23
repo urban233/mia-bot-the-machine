@@ -80,12 +80,23 @@ py_test(
     ],
 )
 
+py_test(
+    name = "test_hardware_config",
+    srcs = ["test_hardware_config.py"],
+    imports = ["../src"],
+    deps = [
+        "//src/mia_bot:hardware_config",
+        "@pip//pytest",
+    ],
+)
+
 test_suite(
     name = "all_tests",
     tests = [
         ":test_bundle",
         ":test_checkpoints",
         ":test_e2e_pipeline",
+        ":test_hardware_config",
         ":test_math",
         ":test_observation",
         ":test_policy_model",

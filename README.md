@@ -262,10 +262,13 @@ bazel run //:train -- [FLAGS]
 | Parameter | Type | Default | Description |
 | :--- | :---: | :---: | :--- |
 | `--resume`, `-r` | `flag` | `False` | Automatically discovers and restores the latest checkpoint folder. |
+| `--profile`, `--hardware-profile` | `str` | `ryzen_3400g_rtx_4060` | Hardware preset profile (`ryzen_3400g_rtx_4060`, `mid_tier_cpu_gpu`, `rtx_4090_workstation`, `cpu_only_entry`, `auto`). |
 | `--save-every` | `int` | `100_000` | Timestep interval between automated checkpoint saves. |
 | `--max-checkpoints` | `int` | `3` | Maximum number of rotating checkpoints retained before pruning. |
-| `--n-proc` | `int` | `10` | Number of parallel worker processes executing `RocketSim` physics. |
-| `--render` | `flag` | `False` | Enable diagnostic rendering mode (when supported by simulation host). |
+| `--n-proc` | `int` | Profile default (`6`) | Number of parallel worker processes executing `RocketSim` physics. |
+| `--device` | `str` | Profile default (`cuda`) | Compute target (`cuda` or `cpu`). |
+| `--min-inference-size` | `int` | Profile default (`64`) | Observation batch size threshold for policy forward pass. |
+| `--ppo-minibatch-size` | `int` | Profile default (`25000`) | Minibatch chunk size for Tensor Core gradient optimization. |
 
 ---
 
@@ -286,6 +289,7 @@ mia-bot-the-machine/
 ├── src/mia_bot/               # Core Application Package
 │   ├── BUILD.bazel            # Target definitions for bot, train, export, bundle
 │   ├── bot.py                 # In-game inference agent with runfiles resolution
+│   ├── hardware_config.py     # Hardware abstraction profiles & CUDA/TF32 tuning
 │   ├── train.py               # Headless PPO multi-worker training engine
 │   ├── export.py              # TorchScript JIT tracing & model extractor
 │   ├── bundle.py              # RLBot distribution packager

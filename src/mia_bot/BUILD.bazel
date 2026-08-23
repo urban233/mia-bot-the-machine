@@ -7,6 +7,7 @@ exports_files([
     "bot.py",
     "bundle.py",
     "export.py",
+    "hardware_config.py",
     "main.py",
     "train.py",
 ])
@@ -64,6 +65,15 @@ py_binary(
     main = "main.py",
 )
 
+py_library(
+    name = "hardware_config",
+    srcs = ["hardware_config.py"],
+    imports = [".."],
+    deps = [
+        ":torch_deps",
+    ],
+)
+
 py_binary(
     name = "train",
     srcs = ["train.py"],
@@ -71,6 +81,7 @@ py_binary(
     imports = [".."],
     main = "train.py",
     deps = [
+        ":hardware_config",
         ":torch_deps",
         "@pip//numpy",
         "@pip//rlgym_ppo",

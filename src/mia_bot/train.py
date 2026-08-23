@@ -4,6 +4,14 @@ import os
 import shutil
 import sys
 from pathlib import Path
+from typing import Optional
+
+from mia_bot.hardware_config import (
+    HARDWARE_PROFILES,
+    HardwareConfig,
+    apply_hardware_optimizations,
+    get_hardware_config,
+)
 
 
 # ==============================================================================
@@ -68,10 +76,34 @@ def print_elo_banner(cumulative_steps: int, steps_per_sec: float = 1350.0):
     sys.__stdout__.flush()
 
 
+def print_hardware_banner(config: HardwareConfig, telemetry: dict):
+    gpu_display = telemetry.get("gpu_name") or "None (CPU)"
+    tf32_status = "Enabled (High Throughput)" if telemetry.get("tf32_enabled") else "Disabled / N/A"
+    cudnn_status = "Enabled (Autotuner)" if telemetry.get("cudnn_benchmark_enabled") else "Disabled / N/A"
+    minibatch_str = f"{config.ppo_minibatch_size:,}" if config.ppo_minibatch_size else "Full Batch"
+
+    banner = f"""
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                    MIA-BOT HARDWARE & PERFORMANCE PROFILE                    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Profile Name  : {config.name:<58} │
+│  Description   : {config.description[:58]:<58} │
+│  Physics Cores : {config.n_proc} Workers ({config.n_proc * 2} simulation agents)                     │
+│  Device Target : {config.device.upper():<8} ({gpu_display:<47}) │
+│  Tensor Cores  : TF32 {tf32_status:<53} │
+│  cuDNN Autotune: {cudnn_status:<58} │
+│  Batch / Mini  : {config.ppo_batch_size:,} / {minibatch_str:<47} │
+│  Rollout Memory: {config.ts_per_iteration:,} ts/iter | {config.exp_buffer_size:,} exp buffer                    │
+└──────────────────────────────────────────────────────────────────────────────┘
+"""
+    sys.__stdout__.write(banner + "\n")
+    sys.__stdout__.flush()
+
+
 # ==============================================================================
 # CHECKPOINT MANAGEMENT & ROTATION
 # ==============================================================================
-def find_latest_checkpoint(checkpoints_dir: str = "data/checkpoints") -> str | None:
+def find_latest_checkpoint(checkpoints_dir: str = "data/checkpoints") -> Optional[str]:
     base_path = Path(checkpoints_dir)
     if not base_path.exists():
         return None
@@ -206,12 +238,53 @@ def build_env():
 if __name__ == "__main__":
     from rlgym_ppo import Learner
 
-    parser = argparse.ArgumentParser(description="RLGym-PPO Training Script with Live ELO Progress")
+    available_profiles = list(HARDWARE_PROFILES.keys()) + ["auto"]
+
+    parser = argparse.ArgumentParser(description="RLGym-PPO Training Script with Hardware Acceleration")
     parser.add_argument("--resume", "-r", action="store_true", help="Resume from latest available checkpoint")
+    parser.add_argument(
+        "--profile",
+        "--hardware-profile",
+        type=str,
+        default=None,
+        choices=available_profiles,
+        help=f"Hardware profile preset (default: ryzen_3400g_rtx_4060 or MIA_HARDWARE_PROFILE env)",
+    )
     parser.add_argument("--save-every", type=int, default=100_000, help="Timesteps between checkpoints (default: 100k)")
     parser.add_argument("--max-checkpoints", type=int, default=3, help="Max concurrent checkpoints to retain (default: 3)")
-    parser.add_argument("--n-proc", type=int, default=10, help="Number of parallel physics workers (default: 10)")
+    parser.add_argument("--n-proc", type=int, default=None, help="Override parallel physics workers count")
+    parser.add_argument("--device", type=str, default=None, help="Override compute device ('cuda' or 'cpu')")
+    parser.add_argument("--min-inference-size", type=int, default=None, help="Override min batched inference size")
+    parser.add_argument("--ppo-batch-size", type=int, default=None, help="Override PPO batch size")
+    parser.add_argument("--ppo-minibatch-size", type=int, default=None, help="Override PPO minibatch size")
+    parser.add_argument("--ts-per-iteration", type=int, default=None, help="Override timesteps collected per iteration")
+    parser.add_argument("--exp-buffer-size", type=int, default=None, help="Override experience replay buffer size")
     args = parser.parse_args()
+
+    # 1. Resolve hardware configuration profile
+    hw_config = get_hardware_config(args.profile)
+
+    # 2. Apply explicit CLI parameter overrides if provided
+    if args.n_proc is not None:
+        hw_config.n_proc = args.n_proc
+    if args.device is not None:
+        hw_config.device = args.device
+    if args.min_inference_size is not None:
+        hw_config.min_inference_size = args.min_inference_size
+    if args.ppo_batch_size is not None:
+        hw_config.ppo_batch_size = args.ppo_batch_size
+    if args.ppo_minibatch_size is not None:
+        hw_config.ppo_minibatch_size = args.ppo_minibatch_size
+    if args.ts_per_iteration is not None:
+        hw_config.ts_per_iteration = args.ts_per_iteration
+    if args.exp_buffer_size is not None:
+        hw_config.exp_buffer_size = args.exp_buffer_size
+
+    # 3. Apply PyTorch, CUDA, TF32 and multi-threading optimizations
+    telemetry = apply_hardware_optimizations(hw_config)
+
+    # 4. Display hardware profile banner
+    print_hardware_banner(hw_config, telemetry)
 
     checkpoint_folder = None
     if args.resume:
@@ -226,17 +299,20 @@ if __name__ == "__main__":
 
     learner = Learner(
         env_create_function=build_env,
-        n_proc=args.n_proc,
-        min_inference_size=128,
-        ppo_batch_size=50000,
-        policy_layer_sizes=(256, 256, 256),
-        critic_layer_sizes=(256, 256, 256),
-        ts_per_iteration=50000,
-        exp_buffer_size=100000,
-        device="cuda",
+        n_proc=hw_config.n_proc,
+        min_inference_size=hw_config.min_inference_size,
+        ppo_batch_size=hw_config.ppo_batch_size,
+        ppo_minibatch_size=hw_config.ppo_minibatch_size,
+        ppo_epochs=hw_config.ppo_epochs,
+        policy_layer_sizes=hw_config.policy_layer_sizes,
+        critic_layer_sizes=hw_config.critic_layer_sizes,
+        ts_per_iteration=hw_config.ts_per_iteration,
+        exp_buffer_size=hw_config.exp_buffer_size,
+        device=hw_config.device,
+        shm_buffer_size=hw_config.shm_buffer_size,
+        instance_launch_delay=hw_config.instance_launch_delay,
         save_every_ts=args.save_every,
         checkpoint_load_folder=checkpoint_folder,
     )
 
     learner.learn()
-

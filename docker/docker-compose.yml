@@ -10,6 +10,7 @@ services:
     ipc: host
     shm_size: '2gb'
     environment:
+      - MIA_HARDWARE_PROFILE=${MIA_HARDWARE_PROFILE:-ryzen_3400g_rtx_4060}
       - OMP_NUM_THREADS=1
       - MKL_NUM_THREADS=1
       - OPENBLAS_NUM_THREADS=1
