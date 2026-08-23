@@ -1,0 +1,20 @@
+# General Bazel settings
+common --enable_bzlmod
+
+# Strict action environment for reproducible and hermetic builds
+build --incompatible_strict_action_env
+build --announce_rc
+
+# Output & Test settings
+test --test_output=errors
+test --test_summary=detailed
+
+# Config: CPU (Default)
+build:cpu --define=DEVICE=cpu
+
+# Config: CUDA (GPU Training)
+build:cuda --define=DEVICE=cuda
+
+# Config: Opt (Optimized build)
+build:opt --compilation_mode=opt
+

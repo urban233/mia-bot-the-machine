@@ -1,0 +1,83 @@
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "__init__.py",
+    "bot.py",
+    "bundle.py",
+    "export.py",
+    "main.py",
+    "train.py",
+])
+
+# ------------------------------------------------------------------------------
+# Core Package Libraries and Binaries
+# ------------------------------------------------------------------------------
+py_library(
+    name = "bot_lib",
+    srcs = [
+        "__init__.py",
+        "bot.py",
+    ],
+    imports = [".."],
+    deps = [
+        "@pip//numpy",
+        "@pip//rlbot",
+        "@pip//torch",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+py_binary(
+    name = "bot_bin",
+    srcs = ["bot.py"],
+    data = ["//:bot_configs"],
+    imports = [".."],
+    main = "bot.py",
+    deps = [":bot_lib"],
+)
+
+py_binary(
+    name = "main",
+    srcs = ["main.py"],
+    imports = [".."],
+    main = "main.py",
+)
+
+py_binary(
+    name = "train",
+    srcs = ["train.py"],
+    data = ["//:collision_meshes"],
+    imports = [".."],
+    main = "train.py",
+    deps = [
+        "@pip//numpy",
+        "@pip//rlgym_ppo",
+        "@pip//rlgym_sim",
+        "@pip//rocketsim",
+        "@pip//torch",
+    ],
+)
+
+py_binary(
+    name = "export",
+    srcs = ["export.py"],
+    imports = [".."],
+    main = "export.py",
+    deps = [
+        "@pip//torch",
+    ],
+)
+
+py_binary(
+    name = "bundle",
+    srcs = ["bundle.py"],
+    data = [
+        "bot.py",
+        "//:bot_configs",
+    ],
+    imports = [".."],
+    main = "bundle.py",
+)
+

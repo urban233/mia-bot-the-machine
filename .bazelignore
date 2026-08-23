@@ -1,0 +1,7 @@
+# Ignored directories for Bazel
+data
+dist
+build
+.venv
+__pycache__
+

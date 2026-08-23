@@ -1,0 +1,49 @@
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_load")
+load("@rules_pkg//pkg:pkg.bzl", "pkg_tar")
+
+package(default_visibility = ["//visibility:public"])
+
+# Package application files and simulation meshes into /app layer
+pkg_tar(
+    name = "app_layer",
+    srcs = [
+        "//:collision_meshes",
+        "//src/mia_bot:export.py",
+        "//src/mia_bot:train.py",
+    ],
+    package_dir = "/app",
+)
+
+# Container image definition for training
+oci_image(
+    name = "training_image",
+    base = "@python_base_linux_amd64",
+    env = {
+        "MKL_NUM_THREADS": "1",
+        "NVIDIA_DRIVER_CAPABILITIES": "compute,utility",
+        "NVIDIA_VISIBLE_DEVICES": "all",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PYTHONUNBUFFERED": "1",
+    },
+    entrypoint = [
+        "python",
+        "/app/train.py",
+    ],
+    tars = [":app_layer"],
+    workdir = "/app",
+)
+
+# Load directly into Docker/Podman: bazel run //container:training_tarball
+oci_load(
+    name = "training_tarball",
+    image = ":training_image",
+    repo_tags = ["mia-bot-train:bazel"],
+)
+
+# Output tarball filegroup: bazel build //container:training_tarball_file --output_groups=tarball
+filegroup(
+    name = "training_tarball_file",
+    srcs = [":training_tarball"],
+    output_group = "tarball",
+)

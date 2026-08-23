@@ -1,8 +1,8 @@
 services:
   train:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
     image: mia-bot-train:latest
     container_name: mia-bot-train
     stdin_open: true
@@ -14,10 +14,11 @@ services:
       - MKL_NUM_THREADS=1
       - OPENBLAS_NUM_THREADS=1
       - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     volumes:
-      - ./data:/app/data
+      - ../data:/app/data
     deploy:
       resources:
         reservations:
@@ -29,13 +30,13 @@ services:
 
   export:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
     image: mia-bot-train:latest
     container_name: mia-bot-export
-    entrypoint: ["python", "export.py"]
+    entrypoint: ["python", "-m", "mia_bot.export"]
     volumes:
-      - ./data:/app/data
-      - ./:/app/out
+      - ../data:/app/data
+      - ../:/app/out
     command: ["--checkpoints-dir", "/app/data/checkpoints", "--output", "/app/out/policy.pt"]
 

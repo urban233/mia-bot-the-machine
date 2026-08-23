@@ -1,0 +1,8 @@
+torch>=2.2.0
+numpy>=1.24.0
+rlbot>=1.65.0
+rocketsim>=2.1.0
+rlgym-sim @ git+https://github.com/AechPro/rocket-league-gym-sim@main
+rlgym-ppo @ git+https://github.com/AechPro/rlgym-ppo
+pytest>=8.0.0
+

@@ -1,0 +1,37 @@
+name: Continuous Integration (Bazel 9)
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Mount Bazel cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/bazel
+          key: bazel-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'requirements_lock.txt') }}
+          restore-keys: |
+            bazel-${{ runner.os }}-
+
+      - name: Run Bazel Tests
+        run: |
+          bazel test //... --test_output=errors
+
+      - name: Build RLBot Release Bundle
+        run: |
+          bazel build //:bot_bundle_zip //:bot_bundle_tar
+
+      - name: Upload RLBot Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mia-bot-release
+          path: bazel-bin/mia_bot.zip
+

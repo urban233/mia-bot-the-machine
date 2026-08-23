@@ -1,0 +1,93 @@
+load("@rules_python//python:defs.bzl", "py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+py_test(
+    name = "test_math",
+    srcs = ["test_math.py"],
+    imports = ["../src"],
+    deps = [
+        "//src/mia_bot:bot_lib",
+        "@pip//numpy",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "test_observation",
+    srcs = ["test_observation.py"],
+    imports = ["../src"],
+    deps = [
+        "//src/mia_bot:bot_lib",
+        "@pip//numpy",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "test_checkpoints",
+    srcs = ["test_checkpoints.py"],
+    imports = ["../src"],
+    deps = [
+        "//src/mia_bot:train",
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "test_policy_model",
+    srcs = ["test_policy_model.py"],
+    imports = ["../src"],
+    deps = [
+        "//src/mia_bot:export",
+        "@pip//pytest",
+        "@pip//torch",
+    ],
+)
+
+py_test(
+    name = "test_bundle",
+    srcs = ["test_bundle.py"],
+    data = [
+        "//:appearance.cfg",
+        "//:bot.cfg",
+        "//:requirements.txt",
+        "//src/mia_bot:bot.py",
+    ],
+    imports = ["../src"],
+    deps = [
+        "@pip//pytest",
+    ],
+)
+
+py_test(
+    name = "test_e2e_pipeline",
+    srcs = ["test_e2e_pipeline.py"],
+    data = [
+        "//:appearance.cfg",
+        "//:bot.cfg",
+        "//:requirements.txt",
+        "//src/mia_bot:bot.py",
+        "//src/mia_bot:bundle.py",
+    ],
+    imports = ["../src"],
+    deps = [
+        "//src/mia_bot:bot_lib",
+        "//src/mia_bot:export",
+        "@pip//numpy",
+        "@pip//pytest",
+        "@pip//torch",
+    ],
+)
+
+test_suite(
+    name = "all_tests",
+    tests = [
+        ":test_bundle",
+        ":test_checkpoints",
+        ":test_e2e_pipeline",
+        ":test_math",
+        ":test_observation",
+        ":test_policy_model",
+    ],
+)

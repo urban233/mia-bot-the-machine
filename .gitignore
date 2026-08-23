@@ -9,6 +9,9 @@ wheels/
 # Virtual environments
 .venv
 
+# Bazel symlinks
+bazel-*
+
 *.pt
 *:Zone.Identifier
 data/

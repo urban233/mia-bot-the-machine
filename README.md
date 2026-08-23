@@ -4,53 +4,122 @@
 
 <h1 align="center">MIA-BOT: The Machine</h1>
 
-A standalone, reinforcement learning-driven Rocket League agent trained with `rlgym-sim` and `rlgym-ppo`, optimized for CPU inference and deployment via RLBot.
+A standalone, reinforcement learning-driven Rocket League agent trained with `rlgym-sim` and `rlgym-ppo`, optimized for CPU inference and deployment via RLBot. Built and tested with **Bazel 9** (Bzlmod, `rules_python 2.3.x`, `rules_pkg`, `rules_oci`).
 
 ---
 
 ## Prerequisites
 
-* **Python 3.11**
-* **[uv](https://github.com/astral-sh/uv)** package manager
-* **NVIDIA GPU** with CUDA support
+* **Bazelisk / Bazel 9** (for hermetic builds, tests, packaging, and container images)
+* **Python 3.11** (managed hermetically by Bazel, or via `uv` for standalone usage)
+* **NVIDIA GPU** with CUDA support (for training)
 * **[RLBot GUI](https://rlbot.org/)** (v4 / classic)
 
 ---
 
-## Quick Start Workflow
+## Bazel Quick Start Workflow
+
+### 1. Run Automated Test Suite
+Run unit and integration tests (math, observation features, checkpoint rotation, policy model, and e2e pipeline):
+
+```bash
+bazel test //...
+```
+
+### 2. Build RLBot Distribution Release Bundle
+Hermetically package the bot into `mia_bot.zip` and `mia_bot.tar.gz` via `rules_pkg`:
+
+```bash
+bazel build //:bot_bundle_zip //:bot_bundle_tar
+# Output generated at: bazel-bin/mia_bot.zip
+```
+
+### 3. Build & Load Container Image for GPU Training
+Build and load the container image into your local Docker daemon:
+
+```bash
+bazel run //container:training_tarball
+```
+
+### 4. Run Training via Bazel
+Run GPU-accelerated training directly:
+
+```bash
+bazel run //:train -- --resume --n-proc 12
+```
+
+### 5. Export Policy via Bazel
+Trace latest PPO checkpoint into TorchScript `policy.pt`:
+
+```bash
+bazel run //:export -- --checkpoints-dir data/checkpoints --output policy.pt
+```
+
+### 6. Run RLBot Bundler Script
+Generate unpacked `dist/mia_bot/` folder for RLBot GUI:
+
+```bash
+bazel run //:bundle
+```
+
+---
+
+## Docker GPU Training Workflow (WSL2 / Linux)
+
+Training `rlgym-sim` inside Docker under Linux/WSL2 provides maximum IPC throughput and isolation.
+
+### 1. Run with Helper Script
+```bash
+chmod +x ./docker/docker-run.sh
+./docker/docker-run.sh --resume --n-proc 12
+```
+
+### 2. Run with Docker Compose
+```bash
+# Build image
+docker compose -f docker/docker-compose.yml build
+
+# Start interactive training
+docker compose -f docker/docker-compose.yml run --rm train --n-proc 12
+
+# Export policy weights
+docker compose -f docker/docker-compose.yml run --rm export
+```
+
+### 3. Windows PowerShell
+```powershell
+.\docker\docker-run.ps1 -PassthroughArgs "--resume", "--n-proc", "12"
+```
+
+---
+
+## Standalone / uv Workflow
+
+For quick iterations without Bazel:
 
 **1. Install dependencies:**
-
 ```powershell
 uv sync
-
 ```
 
 **2. Train the bot:**
-
 ```powershell
-uv run .\train.py
-
+uv run python -m mia_bot.train
 ```
 
 **3. Export trained policy to TorchScript:**
-
 ```powershell
-uv run .\export.py
-
+uv run python -m mia_bot.export
 ```
 
 **4. Bundle files for distribution:**
-
 ```powershell
-uv run .\bundle.py
-
+uv run python -m mia_bot.bundle
 ```
 
 **5. Play in RLBot:**
-
 * Open **RLBot GUI**.
-* Click **Add** $\rightarrow$ **Load Folder** and select `dist/mia_bot` (or load `dist/mia_bot.zip`).
+* Click **Add** $\rightarrow$ **Load Folder** and select `dist/mia_bot` (or load `dist/mia_bot.zip` / `bazel-bin/mia_bot.zip`).
 * Add `ML_Demon_Bot` to a team and click **Start Match**.
 
 ---
@@ -59,9 +128,10 @@ uv run .\bundle.py
 
 `train.py` supports configurable arguments for automated checkpointing, auto-resuming, and parallel worker allocation:
 
-```powershell
-uv run .\train.py [OPTIONS]
-
+```bash
+bazel run //:train -- [OPTIONS]
+# or: uv run python -m mia_bot.train [OPTIONS]
+# or: ./docker/docker-run.sh [OPTIONS]
 ```
 
 | Flag | Type | Default | Description |
@@ -71,40 +141,9 @@ uv run .\train.py [OPTIONS]
 | `--max-checkpoints` | `int` | `3` | Maximum number of concurrent checkpoint folders to retain before automatically pruning older ones. |
 | `--n-proc` | `int` | `10` | Number of parallel CPU simulation processes running physics workers. |
 
-### Example Commands
-
-* **Start a fresh training run:**
-```powershell
-uv run .\train.py
-
-```
-
-
-* **Resume seamlessly from the latest saved checkpoint:**
-```powershell
-uv run .\train.py --resume
-
-```
-
-
-* **Save checkpoints every 250k steps and keep the last 5:**
-```powershell
-uv run .\train.py --resume --save-every 250000 --max-checkpoints 5
-
-```
-
-
-* **Run with 16 parallel CPU workers:**
-```powershell
-uv run .\train.py --resume --n-proc 16
-
-```
-
-
-
 ### Interactive Terminal Controls
 
-While `train.py` is running, enter commands into the terminal:
+While training is running, enter commands into the terminal:
 
 * **`p` + Enter**: Pause / unpause environment stepping.
 * **`c` + Enter**: Force an immediate checkpoint save.
@@ -125,77 +164,48 @@ While `train.py` is running, enter commands into the terminal:
 
 ---
 
-## Docker Training (WSL2 / Linux)
-
-Training `rlgym-sim` inside Docker under WSL2 offers **5%–15% faster simulation throughput** due to lower Linux IPC and CPU process-forking overhead.
-
-### Docker Prerequisites
-* **WSL2** with updated Linux kernel (`wsl --update`).
-* **NVIDIA Driver** on host with CUDA support.
-* **NVIDIA Container Toolkit** or Docker Desktop with WSL2 GPU integration enabled.
-
-### 1. Build the Docker Image
-```bash
-docker compose build
-# Or directly:
-docker build -t mia-bot-train:latest .
-```
-
-### 2. Run Training with Docker Compose
-```bash
-# Start/resume training in interactive mode with GPU acceleration:
-docker compose run --rm train
-
-# Pass custom arguments:
-docker compose run --rm train --n-proc 14 --save-every 100000 --max-checkpoints 5
-```
-
-### 3. Run with Helper Scripts or Docker CLI
-
-**Linux / WSL2 bash:**
-```bash
-chmod +x ./docker-run.sh
-./docker-run.sh --resume --n-proc 12
-```
-
-**Windows PowerShell:**
-```powershell
-.\docker-run.ps1 -PassthroughArgs "--resume", "--n-proc", "12"
-```
-
-**Direct `docker run` command:**
-```bash
-docker run --rm -it \
-    --gpus all \
-    --shm-size 2gb \
-    -v $(pwd)/data:/app/data \
-    mia-bot-train:latest --resume --save-every 100000 --max-checkpoints 3
-```
-
-### 4. Export Policy via Docker
-```bash
-docker compose run --rm export
-```
-
----
-
 ## Project Structure
 
 ```text
 mia-bot/
-├── .dockerignore        # Docker build context exclusions
-├── appearance.cfg       # Car cosmetics and paint finish
-├── bot.cfg              # RLBot metadata and configuration
-├── bot.py               # Standalone in-game inference agent
-├── bundle.py            # Distribution packager (creates dist/ and .zip)
-├── docker-compose.yml   # Multi-service Docker orchestrator (train / export)
-├── docker-run.ps1       # PowerShell Docker launcher with GPU pass-through
-├── docker-run.sh        # Bash/WSL2 Docker launcher with GPU pass-through
-├── Dockerfile           # GPU-accelerated Linux training container definition
-├── export.py            # Traces PyTorch checkpoint into TorchScript policy.pt
-├── policy.pt            # Exported actor model weights
-├── pyproject.toml       # Python dependencies configuration
-├── requirements.txt     # In-game runtime dependencies for RLBot GUI
-├── train.py             # Headless PPO training script
-└── data/checkpoints/    # Auto-rotated model checkpoints
+├── MODULE.bazel          # Bzlmod module definition (Bazel 9, rules_python, rules_pkg, rules_oci)
+├── .bazelversion         # Pinned Bazel version (9.2.0)
+├── .bazelrc              # Hermetic build flags & execution presets
+├── .bazelignore          # Excludes data/, dist/, .venv/ from Bazel
+├── .dockerignore         # Docker context exclusions
+├── BUILD.bazel           # Root Bazel targets (aliases to //src/mia_bot and release packaging)
+├── WORKSPACE.bazel       # Root workspace marker for IDE extension compatibility
+├── src/
+│   └── mia_bot/
+│       ├── BUILD.bazel   # Package targets (bot_lib, bot_bin, train, export, bundle)
+│       ├── __init__.py   # Package initialization
+│       ├── bot.py        # Standalone in-game inference agent (with runfiles support)
+│       ├── bundle.py     # Distribution packager
+│       ├── export.py     # Traces PyTorch checkpoint into TorchScript policy.pt
+│       ├── main.py       # Quick smoke test entry point
+│       └── train.py      # Headless PPO training script
+├── docker/
+│   ├── Dockerfile        # Layer-cached GPU training container definition
+│   ├── docker-compose.yml# Compose specification for train & export
+│   ├── docker-run.sh     # Linux/WSL2 launch helper
+│   └── docker-run.ps1    # PowerShell launch helper
+├── container/
+│   └── BUILD.bazel       # rules_oci container image definitions
+├── tests/
+│   ├── BUILD.bazel       # py_test targets (unit & end-to-end pipeline)
+│   ├── test_math.py
+│   ├── test_observation.py
+│   ├── test_checkpoints.py
+│   ├── test_policy_model.py
+│   ├── test_bundle.py
+│   └── test_e2e_pipeline.py
+├── .github/workflows/
+│   └── ci.yml            # GitHub Actions CI workflow
+├── appearance.cfg        # Car cosmetics and paint finish
+├── bot.cfg               # RLBot metadata and configuration
+├── policy.pt             # Exported actor model weights
+├── pyproject.toml        # Standalone Python dependency metadata (src layout)
+├── requirements.txt      # RLBot GUI runtime dependencies
+├── requirements_lock.txt # Hermetically pinned dependencies for rules_python
+└── data/checkpoints/     # Auto-rotated model checkpoints (ignored by Bazel)
 ```

@@ -1,0 +1,105 @@
+load("@rules_pkg//pkg:mappings.bzl", "pkg_files")
+load("@rules_pkg//pkg:pkg.bzl", "pkg_tar", "pkg_zip")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "appearance.cfg",
+    "bot.cfg",
+    "requirements.txt",
+])
+
+# ------------------------------------------------------------------------------
+# Data & Assets Filegroups
+# ------------------------------------------------------------------------------
+filegroup(
+    name = "collision_meshes",
+    srcs = glob(["collision_meshes/**/*.cmf"], allow_empty = True),
+)
+
+filegroup(
+    name = "bot_configs",
+    srcs = [
+        "appearance.cfg",
+        "bot.cfg",
+        "requirements.txt",
+    ] + glob(["policy.pt"], allow_empty = True),
+)
+
+# ------------------------------------------------------------------------------
+# Aliases to //src/mia_bot targets
+# ------------------------------------------------------------------------------
+alias(
+    name = "bot_lib",
+    actual = "//src/mia_bot:bot_lib",
+)
+
+alias(
+    name = "bot_bin",
+    actual = "//src/mia_bot:bot_bin",
+)
+
+alias(
+    name = "main",
+    actual = "//src/mia_bot:main",
+)
+
+alias(
+    name = "train",
+    actual = "//src/mia_bot:train",
+)
+
+alias(
+    name = "export",
+    actual = "//src/mia_bot:export",
+)
+
+alias(
+    name = "bundle",
+    actual = "//src/mia_bot:bundle",
+)
+
+# ------------------------------------------------------------------------------
+# Release Packaging Targets (rules_pkg)
+# ------------------------------------------------------------------------------
+pkg_files(
+    name = "mia_bot_src_pkg",
+    srcs = ["//src/mia_bot:bot.py"],
+    prefix = "mia_bot",
+)
+
+pkg_files(
+    name = "mia_bot_config_pkg",
+    srcs = [
+        "appearance.cfg",
+        "bot.cfg",
+        "requirements.txt",
+    ] + glob(["policy.pt"], allow_empty = True),
+    prefix = "mia_bot",
+)
+
+pkg_zip(
+    name = "bot_bundle_zip",
+    srcs = [
+        ":mia_bot_config_pkg",
+        ":mia_bot_src_pkg",
+    ],
+    package_file_name = "mia_bot.zip",
+)
+
+pkg_tar(
+    name = "bot_bundle_tar",
+    srcs = [
+        ":mia_bot_config_pkg",
+        ":mia_bot_src_pkg",
+    ],
+    package_file_name = "mia_bot.tar.gz",
+)
+
+filegroup(
+    name = "bundle_archives",
+    srcs = [
+        ":bot_bundle_tar",
+        ":bot_bundle_zip",
+    ],
+)
