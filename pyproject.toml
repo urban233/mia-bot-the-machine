@@ -1,0 +1,24 @@
+[project]
+name = "mia-bot"
+version = "0.1.0"
+description = "Rocket League RLBot trained with RLGym-PPO and uv"
+readme = "README.md"
+requires-python = ">=3.10,<3.12"
+dependencies = [
+    "torch>=2.2.0",
+    "numpy>=1.24.0",
+    "rlbot>=1.65.0",
+    "rocketsim>=2.1.0",
+    "rlgym-sim @ git+https://github.com/AechPro/rocket-league-gym-sim@main",
+    "rlgym-ppo @ git+https://github.com/AechPro/rlgym-ppo",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu124", marker = "sys_platform == 'win32' or sys_platform == 'linux'" }
+]
