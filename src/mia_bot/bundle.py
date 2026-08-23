@@ -1,9 +1,12 @@
+import os
 import shutil
 import zipfile
 from pathlib import Path
 
 
 def find_repo_root() -> Path:
+    if "BUILD_WORKSPACE_DIRECTORY" in os.environ:
+        return Path(os.environ["BUILD_WORKSPACE_DIRECTORY"])
     p = Path(__file__).resolve()
     for parent in [p.parent, p.parent.parent, p.parent.parent.parent, Path.cwd()]:
         if (parent / "bot.cfg").exists() or (parent / "MODULE.bazel").exists():
@@ -65,5 +68,6 @@ def create_rlbot_bundle():
 
 
 if __name__ == "__main__":
+    if "BUILD_WORKSPACE_DIRECTORY" in os.environ:
+        os.chdir(os.environ["BUILD_WORKSPACE_DIRECTORY"])
     create_rlbot_bundle()
-
