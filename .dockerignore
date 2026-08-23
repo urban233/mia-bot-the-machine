@@ -1,0 +1,14 @@
+.git
+.gitignore
+.venv
+data/
+dist/
+*.pt
+*.zip
+__pycache__/
+*.pyc
+*.pyo
+.idea/
+.vscode/
+*.egg-info/
+

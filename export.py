@@ -61,4 +61,4 @@ def export_policy(checkpoints_dir: str = "data/checkpoints", output_file: str = 
 
 
 if __name__ == "__main__":
-    export_policy()
+    parser = argparse.ArgumentParser(description="Export latest rlgym-ppo checkpoint to TorchScript policy.pt")
