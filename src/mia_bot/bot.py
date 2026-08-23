@@ -1,7 +1,6 @@
 import math
 import os
 import numpy as np
-import torch
 from rlbot.agents.base_agent import BaseAgent, SimpleControllerState
 from rlbot.utils.structures.game_data_struct import GameTickPacket
 
@@ -28,6 +27,8 @@ def get_rotation_matrix(pitch: float, yaw: float, roll: float) -> np.ndarray:
 
 class MLBot(BaseAgent):
     def initialize_agent(self):
+        import torch
+        self.torch = torch
         self.controller = SimpleControllerState()
         self.device = torch.device("cpu")
 
@@ -109,6 +110,7 @@ class MLBot(BaseAgent):
         obs[:min(len(full_vec), 89)] = full_vec[:89]
 
         # --- 3. Neural Network Forward Pass ---
+        torch = self.torch
         with torch.no_grad():
             tensor_obs = torch.as_tensor(obs, dtype=torch.float32, device=self.device).unsqueeze(0)
             actions = self.policy(tensor_obs).squeeze().cpu().numpy()
@@ -124,4 +126,3 @@ class MLBot(BaseAgent):
         self.controller.handbrake = bool(actions[7] > 0)
 
         return self.controller
-
